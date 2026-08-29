@@ -1,15 +1,15 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from app.executor import save_script
-from app.runner import run_script
 from app.models import ExecutionRequest
+from app.runner import run_script
 
 router = APIRouter()
 
 
 @router.get("/")
 def root():
-    return {"message": "Stress Test Platform API"}
+    return {"message": "Stress Platform API"}
 
 
 @router.get("/health")

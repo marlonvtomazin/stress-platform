@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import os
 
 from app.models import ExecutionRequest
 
@@ -24,10 +25,20 @@ def build_command(
         "--tag", "platform=stress-platform",
     ]
 
-    # Constant VUs
+    # Constant VUs + Duration
     if config.vus and config.duration:
         command.extend(["--vus", str(config.vus)])
         command.extend(["--duration", config.duration])
+
+    # Ramping stages (Sprint 3 já preparado)
+    elif config.stages:
+        command.extend(["--vus", "1"])
+
+        for stage in config.stages:
+            command.extend([
+                "--stage",
+                f"{stage.duration}:{stage.target}",
+            ])
 
     return command
 
@@ -47,8 +58,12 @@ def run_script(
 
     command = build_command(execution_id, script, config)
 
+    # Passa as variáveis do InfluxDB para o processo do k6
+    env = os.environ.copy()
+
     process = subprocess.run(
         command,
+        env=env,
         capture_output=True,
         text=True,
     )

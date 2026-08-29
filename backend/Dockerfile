@@ -1,33 +1,28 @@
-# ---------- Stage 1 - Build xk6 ----------
-FROM golang:1.25 AS xk6-builder
+# backend/Dockerfile
 
-RUN go install go.k6.io/xk6/cmd/xk6@latest
-
-RUN xk6 build v2.2.0 \
-    --with github.com/grafana/xk6-output-influxdb
-
-# ---------- Stage 2 - FastAPI ----------
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copia o binário do k6 compilado
-COPY --from=xk6-builder /go/k6 /usr/bin/k6
-
-# Dependências do sistema
+# Install k6 v2.2.0
 RUN apt-get update && apt-get install -y \
-    ca-certificates \
     curl \
+    gnupg \
+    ca-certificates \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://dl.k6.io/key.gpg | gpg --dearmor -o /etc/apt/keyrings/k6-archive-keyring.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+       > /etc/apt/sources.list.d/k6.list \
+    && apt-get update \
+    && apt-get install -y k6 \
     && rm -rf /var/lib/apt/lists/*
 
-# Dependências Python
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Código da aplicação
 COPY app ./app
 
-# Pastas da plataforma
 RUN mkdir -p /scripts /executions
 
 EXPOSE 8080

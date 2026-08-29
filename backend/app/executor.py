@@ -1,12 +1,13 @@
 from pathlib import Path
-import uuid
 import json
+import uuid
 
 SCRIPTS_DIR = Path("/scripts")
 SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def save_script(file_name: str, content: bytes):
+
     execution_id = str(uuid.uuid4())[:8]
 
     execution_path = SCRIPTS_DIR / execution_id
@@ -16,7 +17,6 @@ def save_script(file_name: str, content: bytes):
     report_path.mkdir(exist_ok=True)
 
     script_path = execution_path / file_name
-
     script_path.write_bytes(content)
 
     metadata = {
