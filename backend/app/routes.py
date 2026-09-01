@@ -1,7 +1,7 @@
 from pathlib import Path
 import uuid
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from fastapi.responses import FileResponse
 
 from app.models import ExecutionRequest
@@ -45,8 +45,44 @@ async def upload_script(file: UploadFile = File(...)):
 # Executa um teste
 # ==========================================================
 
-@router.post("/executions/{execution_id}/run")
-def execute_script(execution_id: str, request: ExecutionRequest):
+@router.post(
+    "/executions/{execution_id}/run",
+    summary="Executar teste k6",
+    description="Executa um script k6 previamente enviado para a plataforma."
+)
+def execute_script(
+    execution_id: str,
+    request: ExecutionRequest = Body(
+        openapi_examples={
+            "constant_vus": {
+                "summary": "Teste com VUs constantes",
+                "description": "10 usuários virtuais durante 2 minutos.",
+                "value": {
+                    "test_name": "Benchmark QuickPizza - 2 minutos",
+                    "application": "quickpizza",
+                    "environment": "benchmark",
+                    "vus": 10,
+                    "duration": "2m"
+                }
+            },
+            "ramp_test": {
+                "summary": "Teste em rampa",
+                "description": "Ramp-up de 10 até 100 VUs e depois ramp-down.",
+                "value": {
+                    "test_name": "Ramp Test API Login",
+                    "application": "login-api",
+                    "environment": "homolog",
+                    "stages": [
+                        {"duration": "1m", "target": 10},
+                        {"duration": "2m", "target": 50},
+                        {"duration": "2m", "target": 100},
+                        {"duration": "1m", "target": 0}
+                    ]
+                }
+            }
+        }
+    )
+):
     upload_folder = SCRIPTS_DIR / execution_id
 
     if not upload_folder.exists():
@@ -88,14 +124,18 @@ def get_execution_details(execution_id: str):
 # Download do HTML Report
 # ==========================================================
 
-@router.get("/executions/{execution_id}/report")
-def download_report(execution_id: str):
+@router.get(
+    "/executions/{execution_id}/report/html",
+    summary="Download HTML Report",
+    description="Retorna o relatório HTML gerado automaticamente pelo k6-reporter."
+)
+def download_html_report(execution_id: str):
     report = get_execution_file(execution_id, "report")
 
     if report is None:
         raise HTTPException(
             status_code=404,
-            detail="Report não encontrado."
+            detail="HTML Report não encontrado."
         )
 
     return FileResponse(
