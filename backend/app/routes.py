@@ -1,53 +1,189 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from pathlib import Path
+import uuid
 
-from app.executor import save_script
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
+
 from app.models import ExecutionRequest
 from app.runner import run_script
+from app.services.execution_service import (
+    list_executions,
+    get_execution,
+    get_execution_file,
+)
 
 router = APIRouter()
 
-
-@router.get("/")
-def root():
-    return {"message": "Stress Platform API"}
+# Pasta onde os uploads ficam armazenados
+SCRIPTS_DIR = Path("/scripts")
 
 
-@router.get("/health")
-def health():
-    return {"status": "healthy"}
+# ==========================================================
+# Upload de Script
+# ==========================================================
 
-
-@router.get("/executions")
-def executions():
-    return []
-
-
-@router.post("/executions/upload")
+@router.post("/scripts/upload")
 async def upload_script(file: UploadFile = File(...)):
-    if not file.filename.endswith(".js"):
-        raise HTTPException(
-            status_code=400,
-            detail="Only .js k6 scripts are supported.",
-        )
+    execution_id = str(uuid.uuid4())[:8]
 
-    result = save_script(file.filename, await file.read())
+    execution_folder = SCRIPTS_DIR / execution_id
+    execution_folder.mkdir(parents=True, exist_ok=True)
+
+    script_path = execution_folder / file.filename
+
+    with open(script_path, "wb") as buffer:
+        buffer.write(await file.read())
 
     return {
-        "message": "Script uploaded successfully",
-        **result,
+        "execution_id": execution_id,
+        "filename": file.filename,
+        "path": str(script_path),
     }
 
 
-@router.post("/executions/{execution_id}/run")
-def run_execution(
-    execution_id: str,
-    request: ExecutionRequest,
-):
-    try:
-        return run_script(execution_id, request)
+# ==========================================================
+# Executa um teste
+# ==========================================================
 
-    except FileNotFoundError as e:
+@router.post("/executions/{execution_id}/run")
+def execute_script(execution_id: str, request: ExecutionRequest):
+    upload_folder = SCRIPTS_DIR / execution_id
+
+    if not upload_folder.exists():
         raise HTTPException(
             status_code=404,
-            detail=str(e),
+            detail="Script não encontrado."
         )
+
+    return run_script(execution_id, request)
+
+
+# ==========================================================
+# Lista todas as execuções
+# ==========================================================
+
+@router.get("/executions")
+def get_executions():
+    return list_executions()
+
+
+# ==========================================================
+# Detalhes de uma execução
+# ==========================================================
+
+@router.get("/executions/{execution_id}")
+def get_execution_details(execution_id: str):
+    execution = get_execution(execution_id)
+
+    if execution is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Execução não encontrada."
+        )
+
+    return execution
+
+
+# ==========================================================
+# Download do HTML Report
+# ==========================================================
+
+@router.get("/executions/{execution_id}/report")
+def download_report(execution_id: str):
+    report = get_execution_file(execution_id, "report")
+
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Report não encontrado."
+        )
+
+    return FileResponse(
+        path=report,
+        media_type="text/html",
+        filename=f"{execution_id}-report.html",
+    )
+
+
+# ==========================================================
+# Download do Summary JSON
+# ==========================================================
+
+@router.get("/executions/{execution_id}/summary")
+def download_summary(execution_id: str):
+    summary = get_execution_file(execution_id, "summary")
+
+    if summary is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Summary não encontrado."
+        )
+
+    return FileResponse(
+        path=summary,
+        media_type="application/json",
+        filename=f"{execution_id}-summary.json",
+    )
+
+
+# ==========================================================
+# Download do stdout.log
+# ==========================================================
+
+@router.get("/executions/{execution_id}/stdout")
+def download_stdout(execution_id: str):
+    stdout = get_execution_file(execution_id, "stdout")
+
+    if stdout is None:
+        raise HTTPException(
+            status_code=404,
+            detail="stdout.log não encontrado."
+        )
+
+    return FileResponse(
+        path=stdout,
+        media_type="text/plain",
+        filename=f"{execution_id}-stdout.log",
+    )
+
+
+# ==========================================================
+# Download do stderr.log
+# ==========================================================
+
+@router.get("/executions/{execution_id}/stderr")
+def download_stderr(execution_id: str):
+    stderr = get_execution_file(execution_id, "stderr")
+
+    if stderr is None:
+        raise HTTPException(
+            status_code=404,
+            detail="stderr.log não encontrado."
+        )
+
+    return FileResponse(
+        path=stderr,
+        media_type="text/plain",
+        filename=f"{execution_id}-stderr.log",
+    )
+
+
+# ==========================================================
+# Download do metadata.json
+# ==========================================================
+
+@router.get("/executions/{execution_id}/metadata")
+def download_metadata(execution_id: str):
+    metadata = get_execution_file(execution_id, "metadata")
+
+    if metadata is None:
+        raise HTTPException(
+            status_code=404,
+            detail="metadata.json não encontrado."
+        )
+
+    return FileResponse(
+        path=metadata,
+        media_type="application/json",
+        filename=f"{execution_id}-metadata.json",
+    )

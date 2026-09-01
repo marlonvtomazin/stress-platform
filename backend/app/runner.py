@@ -1,10 +1,18 @@
 from pathlib import Path
+from datetime import datetime, timezone
 import subprocess
 import shutil
 
 from app.models import ExecutionRequest
+from app.metadata import create_metadata
 
+# Upload dos scripts
 SCRIPTS_DIR = Path("/scripts")
+
+# Histórico das execuções
+EXECUTIONS_DIR = Path("/executions")
+
+# HTML Reporter
 REPORTER_SOURCE = Path("/app/resources/k6-reporter.bundle.js")
 
 REPORTER_IMPORT = (
@@ -23,41 +31,68 @@ export function handleSummary(data) {
 
 def run_script(execution_id: str, config: ExecutionRequest):
     """
-    Executa um teste k6 e salva:
-      - stdout.log
-      - stderr.log
-      - summary.json
-      - report/report.html
+    Executa um teste k6 e salva todos os artefatos em:
+
+    /executions/{execution_id}
     """
 
-    execution_folder = SCRIPTS_DIR / execution_id
+    # -------------------------------
+    # Pasta do upload
+    # -------------------------------
 
-    if not execution_folder.exists():
+    upload_folder = SCRIPTS_DIR / execution_id
+
+    if not upload_folder.exists():
         raise FileNotFoundError(
-            f"Pasta da execução não encontrada: {execution_folder}"
+            f"Pasta do upload não encontrada: {upload_folder}"
         )
+
+    # -------------------------------
+    # Pasta da execução
+    # -------------------------------
+
+    execution_folder = EXECUTIONS_DIR / execution_id
+    execution_folder.mkdir(parents=True, exist_ok=True)
 
     report_folder = execution_folder / "report"
     report_folder.mkdir(exist_ok=True)
 
-    # Localiza o script enviado (qualquer .js, exceto o reporter)
+    # -------------------------------
+    # Procura o script enviado
+    # -------------------------------
+
     script_files = [
-        f for f in execution_folder.glob("*.js")
-        if f.name != "k6-reporter.bundle.js"
+        file
+        for file in upload_folder.glob("*.js")
+        if file.name != "k6-reporter.bundle.js"
     ]
 
     if not script_files:
         raise FileNotFoundError(
-            f"Nenhum script encontrado em {execution_folder}"
+            f"Nenhum script encontrado em {upload_folder}"
         )
 
-    execution_script = script_files[0]
+    original_script = script_files[0]
+    execution_script = execution_folder / original_script.name
 
-    # Copia o reporter para a pasta da execução
-    shutil.copy(REPORTER_SOURCE, execution_folder / "k6-reporter.bundle.js")
+    shutil.copy(original_script, execution_script)
 
-    # Injeta htmlReport + handleSummary automaticamente
-    script_content = execution_script.read_text(encoding="utf-8")
+    # -------------------------------
+    # Copia o HTML Reporter
+    # -------------------------------
+
+    shutil.copy(
+        REPORTER_SOURCE,
+        execution_folder / "k6-reporter.bundle.js",
+    )
+
+    # -------------------------------
+    # Injeta handleSummary
+    # -------------------------------
+
+    script_content = execution_script.read_text(
+        encoding="utf-8"
+    )
 
     if "handleSummary" not in script_content:
         script_content = (
@@ -68,34 +103,48 @@ def run_script(execution_id: str, config: ExecutionRequest):
             + HANDLE_SUMMARY
         )
 
-        execution_script.write_text(script_content, encoding="utf-8")
+        execution_script.write_text(
+            script_content,
+            encoding="utf-8",
+        )
+
+    # -------------------------------
+    # Comando k6
+    # -------------------------------
 
     command = [
         "k6",
         "run",
         str(execution_script),
 
-        # Continua enviando métricas ao InfluxDB
         "-o",
         "influxdb",
 
-        # Tags globais
         "--tag",
         f"execution_id={execution_id}",
+
         "--tag",
         f"application={config.application}",
+
         "--tag",
         f"environment={config.environment}",
+
         "--tag",
         f"test_name={config.test_name}",
+
         "--tag",
         "platform=stress-platform",
     ]
 
-    # Caso o script não tenha stages e o usuário envie VUs/Duração
     if config.vus and config.duration:
         command.extend(["--vus", str(config.vus)])
         command.extend(["--duration", config.duration])
+
+    # -------------------------------
+    # Executa
+    # -------------------------------
+
+    started_at = datetime.now(timezone.utc)
 
     process = subprocess.run(
         command,
@@ -103,6 +152,12 @@ def run_script(execution_id: str, config: ExecutionRequest):
         capture_output=True,
         text=True,
     )
+
+    finished_at = datetime.now(timezone.utc)
+
+    # -------------------------------
+    # Logs
+    # -------------------------------
 
     (execution_folder / "stdout.log").write_text(
         process.stdout,
@@ -114,16 +169,46 @@ def run_script(execution_id: str, config: ExecutionRequest):
         encoding="utf-8",
     )
 
-    # Remove o reporter temporário
+    # Remove o bundle temporário
     reporter_copy = execution_folder / "k6-reporter.bundle.js"
+
     if reporter_copy.exists():
         reporter_copy.unlink()
 
+    # -------------------------------
+    # Metadata
+    # -------------------------------
+
+    metadata = create_metadata(
+        execution_id=execution_id,
+        config=config,
+        execution_folder=execution_folder,
+        exit_code=process.returncode,
+        started_at=started_at,
+        finished_at=finished_at,
+    )
+
+    # -------------------------------
+    # Retorno da API
+    # -------------------------------
+
     return {
         "execution_id": execution_id,
+        "status": metadata["status"],
         "exit_code": process.returncode,
+
+        "summary_path": str(
+            execution_folder / "summary.json"
+        ),
+
+        "report_path": str(
+            report_folder / "report.html"
+        ),
+
+        "metadata_path": str(
+            execution_folder / "metadata.json"
+        ),
+
         "stdout": process.stdout,
         "stderr": process.stderr,
-        "summary_path": str(execution_folder / "summary.json"),
-        "report_path": str(report_folder / "report.html"),
     }

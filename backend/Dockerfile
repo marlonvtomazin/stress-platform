@@ -23,7 +23,7 @@ COPY app ./app
 # Recursos (HTML Reporter)
 COPY resources ./resources
 
-RUN mkdir -p /scripts
+RUN mkdir -p /scripts /executions
 
 EXPOSE 8080
 
