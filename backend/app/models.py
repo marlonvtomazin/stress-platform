@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class Stage(BaseModel):
     duration: str = Field(
-        description="Tempo de duração da etapa.",
+        description="Duração da etapa do teste.",
         examples=["1m"]
     )
 
@@ -26,7 +27,7 @@ class ExecutionRequest(BaseModel):
     )
 
     environment: str = Field(
-        description="Ambiente da execução.",
+        description="Ambiente onde o teste será executado.",
         examples=["benchmark"]
     )
 
@@ -38,11 +39,23 @@ class ExecutionRequest(BaseModel):
 
     duration: Optional[str] = Field(
         default=None,
-        description="Duração do teste quando utilizar VUs constantes.",
+        description="Duração do teste quando usar VUs constantes.",
         examples=["2m"]
     )
 
     stages: Optional[List[Stage]] = Field(
         default=None,
-        description="Ramp-up / Ramp-down do teste."
+        description="Configuração de ramp-up/ramp-down do teste."
     )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "test_name": "Benchmark QuickPizza - 2 minutos",
+                "application": "quickpizza",
+                "environment": "benchmark",
+                "vus": 10,
+                "duration": "2m"
+            }
+        }
+    }
