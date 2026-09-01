@@ -1,10 +1,8 @@
-# backend/Dockerfile
-
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install k6 v2.2.0
+# Instala k6 v2.2.0
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -18,12 +16,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-RUN mkdir -p /scripts /executions
+# Recursos (HTML Reporter)
+COPY resources ./resources
+
+RUN mkdir -p /scripts
 
 EXPOSE 8080
 
