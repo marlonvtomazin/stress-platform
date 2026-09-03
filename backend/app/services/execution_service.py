@@ -30,7 +30,7 @@ def list_executions():
                 "test_name": metadata.get("test_name", "Sem nome"),
                 "application": metadata.get("application", "-"),
                 "environment": metadata.get("environment", "-"),
-                "status": metadata.get("status", "UNKNOWN"),
+                "status": metadata.get("status", "ERROR"),
                 "started_at": metadata.get("started_at"),
                 "finished_at": metadata.get("finished_at"),
                 "duration_seconds": metadata.get("duration_seconds", 0),

@@ -196,19 +196,7 @@ def run_script(execution_id: str, config: ExecutionRequest):
         "execution_id": execution_id,
         "status": metadata["status"],
         "exit_code": process.returncode,
-
-        "summary_path": str(
-            execution_folder / "summary.json"
-        ),
-
-        "report_path": str(
-            report_folder / "report.html"
-        ),
-
-        "metadata_path": str(
-            execution_folder / "metadata.json"
-        ),
-
-        "stdout": process.stdout,
-        "stderr": process.stderr,
+        "duration_seconds": metadata["duration_seconds"],
+        "summary": metadata["summary"],
+        "message": "Execution finished successfully." if metadata["status"] == "SUCCESS" else "Execution finished with threshold failures."
     }

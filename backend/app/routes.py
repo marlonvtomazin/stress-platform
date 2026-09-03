@@ -149,7 +149,7 @@ def download_html_report(execution_id: str):
 # Download do Summary JSON
 # ==========================================================
 
-@router.get("/executions/{execution_id}/summary")
+@router.get("/executions/{execution_id}/report/summary")
 def download_summary(execution_id: str):
     summary = get_execution_file(execution_id, "summary")
 
@@ -170,7 +170,7 @@ def download_summary(execution_id: str):
 # Download do stdout.log
 # ==========================================================
 
-@router.get("/executions/{execution_id}/stdout")
+@router.get("/executions/{execution_id}/logs/stdout")
 def download_stdout(execution_id: str):
     stdout = get_execution_file(execution_id, "stdout")
 
@@ -191,7 +191,7 @@ def download_stdout(execution_id: str):
 # Download do stderr.log
 # ==========================================================
 
-@router.get("/executions/{execution_id}/stderr")
+@router.get("/executions/{execution_id}/logs/stderr")
 def download_stderr(execution_id: str):
     stderr = get_execution_file(execution_id, "stderr")
 
@@ -212,7 +212,7 @@ def download_stderr(execution_id: str):
 # Download do metadata.json
 # ==========================================================
 
-@router.get("/executions/{execution_id}/metadata")
+@router.get("/executions/{execution_id}/report/metadata")
 def download_metadata(execution_id: str):
     metadata = get_execution_file(execution_id, "metadata")
 

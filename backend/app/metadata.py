@@ -4,6 +4,20 @@ import json
 
 from app.models import ExecutionRequest
 
+def get_execution_status(exit_code: int) -> str:
+    """
+    Traduz o exit code do k6 para um status da plataforma.
+    """
+
+    if exit_code == 0:
+        return "SUCCESS"
+
+    # k6 retorna 99 quando algum threshold falha.
+    if exit_code == 99:
+        return "THRESHOLD_FAILED"
+
+    return "ERROR"
+
 
 def create_metadata(
     execution_id: str,
@@ -34,7 +48,7 @@ def create_metadata(
         "application": config.application,
         "environment": config.environment,
 
-        "status": "SUCCESS" if exit_code == 0 else "FAILED",
+        "status": get_execution_status(exit_code),
 
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
