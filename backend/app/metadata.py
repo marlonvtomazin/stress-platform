@@ -27,6 +27,8 @@ def create_metadata(
     started_at: datetime,
     finished_at: datetime,
 ):
+    
+    
     """
     Lê o summary.json gerado pelo k6 e cria o metadata.json da execução.
     """
@@ -59,6 +61,16 @@ def create_metadata(
         ),
 
         "exit_code": exit_code,
+
+        "config": {
+            "vus": config.vus,
+            "duration": config.duration,
+            "stages": (
+                [stage.model_dump() for stage in config.stages]
+                if config.stages
+                else None
+            ),
+        },
 
         "summary": {
             "total_requests": metrics.get("http_reqs", {})

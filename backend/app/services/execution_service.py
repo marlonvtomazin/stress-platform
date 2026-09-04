@@ -1,7 +1,14 @@
 from pathlib import Path
 import json
 
+import shutil
+import uuid
+
+from app.models import ExecutionRequest, Stage
+from app.runner import run_script
+
 EXECUTIONS_DIR = Path("/executions")
+SCRIPTS_DIR = Path("/scripts")
 
 
 def list_executions():
@@ -91,3 +98,55 @@ def get_execution_file(execution_id: str, file_type: str):
         return None
 
     return file_path
+
+def rerun_execution(execution_id: str):
+    """
+    Reexecuta um teste utilizando o mesmo script e configuração
+    da execução original.
+    """
+
+    execution_folder = EXECUTIONS_DIR / execution_id
+    metadata_file = execution_folder / "metadata.json"
+
+    if not metadata_file.exists():
+        raise FileNotFoundError("Execução não encontrada.")
+
+    with open(metadata_file, "r", encoding="utf-8") as file:
+        metadata = json.load(file)
+
+    # Novo ID para a nova execução
+    new_execution_id = uuid.uuid4().hex[:8]
+
+    # Cria a pasta do novo script
+    new_script_folder = SCRIPTS_DIR / new_execution_id
+    new_script_folder.mkdir(parents=True, exist_ok=True)
+
+    # Copia o script da execução original
+    script_name = metadata["files"]["script"]
+
+    shutil.copy(
+        execution_folder / script_name,
+        new_script_folder / script_name,
+    )
+
+    # Reconstrói o ExecutionRequest usando o metadata
+    request = ExecutionRequest(
+        test_name=metadata["test_name"],
+        application=metadata["application"],
+        environment=metadata["environment"],
+        vus=metadata["config"]["vus"],
+        duration=metadata["config"]["duration"],
+        stages=(
+            [Stage(**stage) for stage in metadata["config"]["stages"]]
+            if metadata["config"]["stages"]
+            else None
+        ),
+    )
+
+    # Executa normalmente
+    result = run_script(new_execution_id, request)
+
+    # Guarda a referência da execução original
+    result["original_execution_id"] = execution_id
+
+    return result

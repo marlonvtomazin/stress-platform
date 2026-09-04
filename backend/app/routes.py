@@ -10,6 +10,7 @@ from app.services.execution_service import (
     list_executions,
     get_execution,
     get_execution_file,
+    rerun_execution
 )
 
 router = APIRouter()
@@ -48,7 +49,8 @@ async def upload_script(file: UploadFile = File(...)):
 @router.post(
     "/executions/{execution_id}/run",
     summary="Executar teste k6",
-    description="Executa um script k6 previamente enviado para a plataforma."
+    description="Executa um script k6 previamente enviado para a plataforma.",
+    tags=["Executions"],
 )
 def execute_script(
     execution_id: str,
@@ -93,12 +95,34 @@ def execute_script(
 
     return run_script(execution_id, request)
 
+# ==========================================================
+# Reexecuta um teste
+# ==========================================================
+
+@router.post(
+    "/executions/{execution_id}/rerun",
+    summary="Reexecutar teste",
+    description="Executa novamente uma execução utilizando o mesmo script e configuração da execução original.",
+    tags=["Executions"],
+)
+def rerun_script(execution_id: str):
+    execution = get_execution(execution_id)
+
+    if execution is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Execução não encontrada."
+        )
+
+    return rerun_execution(execution_id)
+
 
 # ==========================================================
 # Lista todas as execuções
 # ==========================================================
 
-@router.get("/executions")
+@router.get("/executions",
+    tags=["Executions"],)
 def get_executions():
     return list_executions()
 
@@ -107,7 +131,8 @@ def get_executions():
 # Detalhes de uma execução
 # ==========================================================
 
-@router.get("/executions/{execution_id}")
+@router.get("/executions/{execution_id}",
+    tags=["Executions"],)
 def get_execution_details(execution_id: str):
     execution = get_execution(execution_id)
 
