@@ -74,11 +74,26 @@ def get_execution(execution_id: str):
         metadata = json.load(file)
 
     metadata["artifacts"] = {
-        "html_report": (execution_folder / "report" / "report.html").exists(),
-        "summary": (execution_folder / "summary.json").exists(),
-        "metadata": metadata_file.exists(),
-        "stdout": (execution_folder / "stdout.log").exists(),
-        "stderr": (execution_folder / "stderr.log").exists(),
+        "html_report": {
+            "available": (execution_folder / "report" / "report.html").exists(),
+            "endpoint": f"/executions/{execution_id}/report/html",
+        },
+        "summary": {
+            "available": (execution_folder / "summary.json").exists(),
+            "endpoint": f"/executions/{execution_id}/report/summary",
+        },
+        "metadata": {
+            "available": metadata_file.exists(),
+            "endpoint": f"/executions/{execution_id}/report/metadata",
+        },
+        "stdout": {
+            "available": (execution_folder / "stdout.log").exists(),
+            "endpoint": f"/executions/{execution_id}/logs/stdout",
+        },
+        "stderr": {
+            "available": (execution_folder / "stderr.log").exists(),
+            "endpoint": f"/executions/{execution_id}/logs/stderr",
+        },
     }
 
     return metadata
