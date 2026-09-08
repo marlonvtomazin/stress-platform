@@ -61,16 +61,27 @@ def list_executions():
 
 def get_execution(execution_id: str):
     """
-    Retorna o metadata completo de uma execução.
+    Retorna os detalhes completos de uma execução.
     """
 
-    metadata_file = EXECUTIONS_DIR / execution_id / "metadata.json"
+    execution_folder = EXECUTIONS_DIR / execution_id
+    metadata_file = execution_folder / "metadata.json"
 
     if not metadata_file.exists():
         return None
 
     with open(metadata_file, "r", encoding="utf-8") as file:
-        return json.load(file)
+        metadata = json.load(file)
+
+    metadata["artifacts"] = {
+        "html_report": (execution_folder / "report" / "report.html").exists(),
+        "summary": (execution_folder / "summary.json").exists(),
+        "metadata": metadata_file.exists(),
+        "stdout": (execution_folder / "stdout.log").exists(),
+        "stderr": (execution_folder / "stderr.log").exists(),
+    }
+
+    return metadata
 
 
 def execution_exists(execution_id: str):
