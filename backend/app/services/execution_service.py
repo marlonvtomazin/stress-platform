@@ -150,3 +150,26 @@ def rerun_execution(execution_id: str):
     result["original_execution_id"] = execution_id
 
     return result
+
+def delete_execution(execution_id: str):
+    """
+    Remove todos os arquivos de uma execução e o script enviado.
+    """
+
+    execution_folder = EXECUTIONS_DIR / execution_id
+    script_folder = SCRIPTS_DIR / execution_id
+
+    if not execution_folder.exists():
+        raise FileNotFoundError("Execução não encontrada.")
+
+    # Remove os artefatos da execução
+    shutil.rmtree(execution_folder)
+
+    # Remove o script original (caso exista)
+    if script_folder.exists():
+        shutil.rmtree(script_folder)
+
+    return {
+        "message": "Execution deleted successfully.",
+        "execution_id": execution_id,
+    }

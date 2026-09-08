@@ -10,7 +10,8 @@ from app.services.execution_service import (
     list_executions,
     get_execution,
     get_execution_file,
-    rerun_execution
+    rerun_execution,
+    delete_execution,
 )
 
 router = APIRouter()
@@ -143,6 +144,27 @@ def get_execution_details(execution_id: str):
         )
 
     return execution
+
+# ==========================================================
+# Exclui uma execução
+# ==========================================================
+
+@router.delete(
+    "/executions/{execution_id}",
+    summary="Excluir execução",
+    description="Remove uma execução e todos os artefatos gerados (logs, report, summary e metadata).",
+    tags=["Executions"],
+)
+def remove_execution(execution_id: str):
+    execution = get_execution(execution_id)
+
+    if execution is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Execução não encontrada."
+        )
+
+    return delete_execution(execution_id)
 
 
 # ==========================================================
