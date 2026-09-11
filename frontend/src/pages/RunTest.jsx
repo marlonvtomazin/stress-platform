@@ -1,3 +1,9 @@
+import AppLayout from "../components/layout/AppLayout";
+
 export default function RunTest() {
-  return <h1 className="text-3xl font-bold">Run Test</h1>;
+  return (
+    <AppLayout title="Run Test">
+      <h2 className="text-2xl font-bold">Run a k6 Test</h2>
+    </AppLayout>
+  );
 }

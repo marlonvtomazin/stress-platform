@@ -1,3 +1,9 @@
+import AppLayout from "../components/layout/AppLayout";
+
 export default function Settings() {
-  return <h1 className="text-3xl font-bold">Settings</h1>;
+  return (
+    <AppLayout title="Settings">
+      <h2 className="text-2xl font-bold">Platform Settings</h2>
+    </AppLayout>
+  );
 }

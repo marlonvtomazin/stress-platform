@@ -1,3 +1,9 @@
+import AppLayout from "../components/layout/AppLayout";
+
 export default function Scripts() {
-  return <h1 className="text-3xl font-bold">Scripts</h1>;
+  return (
+    <AppLayout title="Scripts">
+      <h2 className="text-2xl font-bold">Uploaded Scripts</h2>
+    </AppLayout>
+  );
 }

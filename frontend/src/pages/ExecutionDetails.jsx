@@ -1,3 +1,9 @@
+import AppLayout from "../components/layout/AppLayout";
+
 export default function ExecutionDetails() {
-  return <h1 className="text-3xl font-bold">Execution Details</h1>;
+  return (
+    <AppLayout title="Execution Details">
+      <h2 className="text-2xl font-bold">Execution Details</h2>
+    </AppLayout>
+  );
 }

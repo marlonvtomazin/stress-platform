@@ -1,3 +1,9 @@
+import AppLayout from "../components/layout/AppLayout";
+
 export default function Reports() {
-  return <h1 className="text-3xl font-bold">Reports</h1>;
+  return (
+    <AppLayout title="Reports">
+      <h2 className="text-2xl font-bold">Execution Reports</h2>
+    </AppLayout>
+  );
 }

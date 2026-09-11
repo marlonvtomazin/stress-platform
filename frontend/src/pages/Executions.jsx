@@ -1,3 +1,9 @@
-export default function Dashboard() {
-  return <h1 className="text-3xl font-bold">Dashboard</h1>;
+import AppLayout from "../components/layout/AppLayout";
+
+export default function Executions() {
+  return (
+    <AppLayout title="Executions">
+      <h2 className="text-2xl font-bold">Execution History</h2>
+    </AppLayout>
+  );
 }
