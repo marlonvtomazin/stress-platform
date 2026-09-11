@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Stress Platform
+    orgId: 1
+    folder: Stress Platform
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/dashboards
