@@ -3,6 +3,8 @@ import DashboardHeader from "../components/dashboard/DashboardHeader";
 import OverviewCards from "../components/dashboard/OverviewCards";
 import useExecutions from "../hooks/useExecutions";
 
+import RecentExecutions from "../components/execution/RecentExecutions";
+
 export default function Dashboard() {
   const { executions, loading, error } = useExecutions();
 
@@ -22,15 +24,7 @@ export default function Dashboard() {
         <>
           <OverviewCards executions={executions} />
 
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-2">
-              Recent Executions
-            </h2>
-
-            <p className="text-slate-400">
-              This table will be implemented in the next step.
-            </p>
-          </div>
+          <RecentExecutions executions={executions} />
         </>
       )}
     </AppLayout>
